@@ -1,7 +1,7 @@
 //Este é o código do clone de "Bomberman" criado na oficina de desenvolvimento de jogos 
 //da Noite de Processing em 27/02/2018.
 
-Tile[][] mapa;
+int[][] mapa;
 float l;
 boolean[] p1c, p2c;
 ArrayList<Bomb> bombs;
@@ -11,7 +11,7 @@ Index p1, p2;
 void setup() {
   size(400, 346); 
   frameRate(15);
-  mapa = new Tile[15][13];
+  mapa = new int[15][13];
   l = width / float(mapa.length);
   
   p1 = new Index( 1, 1 );
@@ -37,7 +37,7 @@ void makeMapa() {
        if( abs((9-dist( x, y, 7, 6 )) * randomGaussian()) > 1.2 ) t = 1;
      }
      
-     mapa[x][y] = new Tile(t);
+     mapa[x][y] = t;
    }
   }
 }
@@ -48,7 +48,12 @@ void draw() {
     for (int y=0; y<mapa[0].length ; y++){
       pushMatrix();
       translate(x*l,y*l);
-      mapa[x][y].plot();
+      switch ( mapa[x][y] ) {
+        case 0: fill(#1CFF88); break;
+        case 1: fill(#FF831C); break;
+        case 2: fill(#5A5A5A); break;
+      }
+      rect(0,0,l,l);
       popMatrix();
     }
   }
@@ -56,36 +61,36 @@ void draw() {
   //EFETUANDO OS CONTROLES DO PLAYER 1
   if( p1.i >= 0 ){
     if (p1c[0]) {
-      if (mapa[p1.i][p1.j-1].atravessavel()) p1.j--; 
+      if (mapa[p1.i][p1.j-1] == 0 && nao_ha_bombas(p1.i, p1.j-1) && !p2.equals(p1.i, p1.j-1)) p1.j--; 
     }
     if (p1c[1]) {
-      if (mapa[p1.i][p1.j+1].atravessavel()) p1.j++; 
+      if (mapa[p1.i][p1.j+1] == 0 && nao_ha_bombas(p1.i, p1.j+1) && !p2.equals(p1.i, p1.j+1)) p1.j++; 
     }
     if (p1c[2]) {
-      if (mapa[p1.i-1][p1.j].atravessavel()) p1.i--; 
+      if (mapa[p1.i-1][p1.j] == 0 && nao_ha_bombas(p1.i-1, p1.j) && !p2.equals(p1.i-1, p1.j)) p1.i--; 
     }
     if (p1c[3]) {
-      if (mapa[p1.i+1][p1.j].atravessavel()) p1.i++; 
+      if (mapa[p1.i+1][p1.j] == 0 && nao_ha_bombas(p1.i+1, p1.j) && !p2.equals(p1.i+1, p1.j)) p1.i++; 
     }
-    if( p1c[4] ) bombs.add( new Bomb( p1 ) );
+    if( p1c[4] && nao_ha_bombas(p1.i, p1.j) ) bombs.add( new Bomb( p1 ) );
   }
     
   
   //EFETUANDO OS CONTROLES DO PLAYER 2
   if( p2.i >= 0 ){
     if (p2c[0]) {
-      if (mapa[p2.i][p2.j-1].atravessavel()) p2.j--; 
+      if (mapa[p2.i][p2.j-1] == 0 && nao_ha_bombas(p2.i, p2.j-1) && !p1.equals(p2.i, p2.j-1)) p2.j--; 
     }
     if (p2c[1]) {
-      if (mapa[p2.i][p2.j+1].atravessavel()) p2.j++; 
+      if (mapa[p2.i][p2.j+1] == 0 && nao_ha_bombas(p2.i, p2.j+1) && !p1.equals(p2.i, p2.j+1)) p2.j++; 
     }
     if (p2c[2]) {
-      if (mapa[p2.i-1][p2.j].atravessavel()) p2.i--; 
+      if (mapa[p2.i-1][p2.j] == 0 && nao_ha_bombas(p2.i-1, p2.j) && !p1.equals(p2.i-1, p2.j)) p2.i--; 
     }
     if (p2c[3]) {
-      if (mapa[p2.i+1][p2.j].atravessavel()) p2.i++; 
+      if (mapa[p2.i+1][p2.j] == 0 && nao_ha_bombas(p2.i+1, p2.j) && !p1.equals(p2.i+1, p2.j)) p2.i++; 
     }
-    if( p2c[4] ) bombs.add( new Bomb( p2 ) );
+    if( p2c[4] && nao_ha_bombas(p2.i, p2.j) ) bombs.add( new Bomb( p2 ) );
   }
   
   //DESENHANDO OS PLAYERS
@@ -99,42 +104,81 @@ void draw() {
     bombs.get(i).plot();
     //CHECANDO SE A BOMBA DA EXPLODIU E...
     if( bombs.get(i).explodiu() ){
-      //CONFERINDO SE HA UM JOGADOR DENTRO DA SUA AREA (PARA "MATA-LO" SE FOR O CASO)
-      if( p1.i == bombs.get(i).pos.i &&
-          abs( p1.j - bombs.get(i).pos.j ) <= 2 ){
-        p1 = new Index( -1, -1 );
+      //CONFERINDO A AREA DA EXPLOSAO NAS QUATRO DIRECOES PARA...
+      
+      // para cima
+      for( int e = bombs.get(i).pos.j - 1; e >= bombs.get(i).pos.j - bombs.get(i).alcance; --e ){
+        if( mapa[bombs.get(i).pos.i][e] == 2 ) break;
+        //DESTRUIR BLOCOS DESTRUTÍVEIS...
+        if( mapa[bombs.get(i).pos.i][e] == 1 ){
+          mapa[bombs.get(i).pos.i][e] = 0;
+          continue;
+        }
+        //E JOGADORES QUE SE ENCONTREM NO CAMINHO.
+        if( p1.equals( bombs.get(i).pos.i, e ) ) p1.set( -1, -1 );
+        if( p2.equals( bombs.get(i).pos.i, e ) ) p2.set( -1, -1 );
+        kaboom( (bombs.get(i).pos.i + 0.5) * l, (e + 0.5) * l );
       }
-      if( p2.i == bombs.get(i).pos.i &&
-          abs( p2.j - bombs.get(i).pos.j ) <= 2 ){
-        p2 = new Index( -1, -1 );
+      // para baixo
+      for( int e = bombs.get(i).pos.j + 1; e <= bombs.get(i).pos.j + bombs.get(i).alcance; ++e ){
+        if( mapa[bombs.get(i).pos.i][e] == 2 ) break;
+        if( mapa[bombs.get(i).pos.i][e] == 1 ){
+          mapa[bombs.get(i).pos.i][e] = 0;
+          continue;
+        }
+        if( p1.equals( bombs.get(i).pos.i, e ) ) p1.set( -1, -1 );
+        if( p2.equals( bombs.get(i).pos.i, e ) ) p2.set( -1, -1 );
+        kaboom( (bombs.get(i).pos.i + 0.5) * l, (e + 0.5) * l );
       }
-      if( p1.j == bombs.get(i).pos.j &&
-          abs( p1.i - bombs.get(i).pos.i ) <= 2 ){
-        p1 = new Index( -1, -1 );
+      // para a esquerda
+      for( int e = bombs.get(i).pos.i - 1; e >= bombs.get(i).pos.i - bombs.get(i).alcance; --e ){
+        if( mapa[e][bombs.get(i).pos.j] == 2 ) break;
+        if( mapa[e][bombs.get(i).pos.j] == 1 ){
+          mapa[e][bombs.get(i).pos.j] = 0;
+          continue;
+        }
+        if( p1.equals( e, bombs.get(i).pos.j ) ) p1.set( -1, -1 );
+        if( p2.equals( e, bombs.get(i).pos.j ) ) p2.set( -1, -1 );
+        kaboom( (e + 0.5) * l, (bombs.get(i).pos.j + 0.5) * l );
       }
-      if( p2.j == bombs.get(i).pos.j &&
-          abs( p2.i - bombs.get(i).pos.i ) <= 2 ){
-        p2 = new Index( -1, -1 );
+      // para a direita
+      for( int e = bombs.get(i).pos.i + 1; e <= bombs.get(i).pos.i + bombs.get(i).alcance; ++e ){
+        if( mapa[e][bombs.get(i).pos.j] == 2 ) break;
+        if( mapa[e][bombs.get(i).pos.j] == 1 ){
+          mapa[e][bombs.get(i).pos.j] = 0;
+          continue;
+        }
+        if( p1.equals( e, bombs.get(i).pos.j ) ) p1.set( -1, -1 );
+        if( p2.equals( e, bombs.get(i).pos.j ) ) p2.set( -1, -1 );
+        kaboom( (e + 0.5) * l, (bombs.get(i).pos.j + 0.5) * l );
       }
       
-      // E O MESMO PARA AS PAREDES DESTRUTÍVEIS. 
-      for(int x=-2; x <= 2; x++){
-        if( x == 0 ) continue;
-        int I = bombs.get(i).pos.i + x;
-        if( I < 0 || I > mapa.length-1 ) continue;
-        if( mapa[I][bombs.get(i).pos.j].tipo == 1 ){
-          mapa[I][bombs.get(i).pos.j].tipo = 0;
-        }
-      }
-      for(int y=-2; y <= 2; y++){
-        if( y == 0 ) continue;
-        int J = bombs.get(i).pos.j + y;
-        if( J < 0 || J > mapa[0].length-1 ) continue;
-        if( mapa[bombs.get(i).pos.i][J].tipo == 1 ){
-          mapa[bombs.get(i).pos.i][J].tipo = 0;
-        }
-      }
       bombs.remove(i);
     }
   }
+}
+
+boolean nao_ha_bombas( int I, int J ){
+  for(int i = bombs.size()-1; i >= 0; --i ){
+    if( bombs.get(i).pos.equals( I, J ) ) return false;
+  }
+  return true;
+}
+
+void kaboom( float x, float y ){
+  fill( random( 160, 255), random(160, 255), 0 );
+  int N = round( random( 5.501, 8.499 ) );
+  N *= 2;
+  beginShape();
+  float t = TWO_PI/float(N);
+  float d = l * 0.8;
+  boolean q = false;
+  for( int i = 0; i < N; ++i ){
+    float a = random( i*t, (i+1)*t );
+    d += random( -3, 2 );
+    vertex( d * cos(a) + x, d * sin(a) + y );
+    if( q ) d = l * 0.8;
+    else d = l * 0.4;
+  }
+  endShape(CLOSE);
 }

@@ -1,9 +1,10 @@
 class Bomb{
   Index pos;
-  int fusivel;
+  int fusivel, alcance;
   Bomb( Index p ){
     pos = p.get();
     fusivel = millis() + 3000;
+    alcance = 2;
   }
   boolean explodiu(){
     if( millis() > fusivel ) return true;
@@ -15,32 +16,18 @@ class Bomb{
   }
 }
 
-
-class Tile{
-  int tipo;
-  //0: nada, 1: pedra(des) 2:pedra(ind)
-  Tile( int t ){
-    tipo = t;
-  }
-  boolean atravessavel(){
-    return tipo == 0;
-  }
-  
-  void plot() {
-   switch (tipo) {
-     case 0: fill(#1CFF88); break;
-     case 1: fill(#FF831C); break;
-     case 2: fill(#5A5A5A); break;
-   }
-   rect(0,0,l,l);
-  }
-}
-
 class Index{
   int i, j;
   Index( int I, int J ){
     i = I;
     j = J;
+  }
+  void set( int I, int J ){
+    i = I;
+    j = J;
+  }
+  boolean equals( int I, int J ){
+    return (i == I && j == J);
   }
   Index get(){
     return new Index( i, j );
